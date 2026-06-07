@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Professional PPTX Generator - To'liq qayta yozilgan versiya
-Rasmlar to'g'ri joyda, matnlar to'liq va mantiqiy
+PROFESSIONAL DIPLOM HIMOYA PREZENTATSIYASI
+Amonov Sohibjon | TATU Samarqand | 2026
 """
 import zipfile, os, shutil
 from pathlib import Path
@@ -17,7 +17,7 @@ LGRAY  = "B0C4DE"
 GOLD   = "FFD700"
 GREEN  = "00E676"
 RED    = "FF5252"
-YELLOW = "FFD740"
+DARK3  = "081424"
 
 def emu(cm):   return int(cm * 360000)
 def hpt(pt):   return int(pt * 100)
@@ -31,825 +31,832 @@ def run(text, sz=14, bold=False, color=WHITE, italic=False):
             f'<a:solidFill><a:srgbClr val="{color}"/></a:solidFill>'
             f'<a:latin typeface="Calibri"/></a:rPr><a:t>{esc(text)}</a:t></a:r>')
 
-def para(runs_xml, align="l", spc=0):
+def para(r, align="l", spc=0, lspc=0):
     al = {"l":"", "c":' algn="ctr"', "r":' algn="r"'}.get(align,"")
     sp = f'<a:spcBef><a:spcPts val="{spc}"/></a:spcBef>' if spc else ''
-    return f'<a:p><a:pPr{al}>{sp}</a:pPr>{runs_xml}</a:p>'
+    ls = f'<a:spcAft><a:spcPts val="{lspc}"/></a:spcAft>' if lspc else ''
+    return f'<a:p><a:pPr{al}>{sp}{ls}</a:pPr>{r}</a:p>'
 
-def tbox(x,y,w,h, paras_xml, anchor="t"):
+def tbox(x,y,w,h,paras_xml,anchor="t"):
     return f'''<p:sp>
-    <p:nvSpPr><p:cNvPr id="1" name="tb"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
-    <p:spPr><a:xfrm><a:off x="{emu(x)}" y="{emu(y)}"/><a:ext cx="{emu(w)}" cy="{emu(h)}"/></a:xfrm>
-    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr>
-    <p:txBody><a:bodyPr wrap="square" anchor="{anchor}" lIns="91440" rIns="91440" tIns="45720" bIns="45720"/>
-    <a:lstStyle/>{paras_xml}</p:txBody></p:sp>'''
+<p:nvSpPr><p:cNvPr id="1" name="tb"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+<p:spPr><a:xfrm><a:off x="{emu(x)}" y="{emu(y)}"/><a:ext cx="{emu(w)}" cy="{emu(h)}"/></a:xfrm>
+<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr>
+<p:txBody><a:bodyPr wrap="square" anchor="{anchor}" lIns="91440" rIns="91440" tIns="45720" bIns="45720"/>
+<a:lstStyle/>{paras_xml}</p:txBody></p:sp>'''
 
-def rect(x,y,w,h, fill, alpha=None):
+def rect(x,y,w,h,fill,alpha=None,rx=0):
     if alpha:
         fx = f'<a:solidFill><a:srgbClr val="{fill}"><a:alpha val="{alpha}"/></a:srgbClr></a:solidFill>'
     else:
         fx = f'<a:solidFill><a:srgbClr val="{fill}"/></a:solidFill>'
+    prst = "roundRect" if rx else "rect"
+    avl = f'<a:avLst><a:gd name="adj" fmla="val {rx}"/></a:avLst>' if rx else '<a:avLst/>'
     return f'''<p:sp>
-    <p:nvSpPr><p:cNvPr id="2" name="r"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr>
-    <p:spPr><a:xfrm><a:off x="{emu(x)}" y="{emu(y)}"/><a:ext cx="{emu(w)}" cy="{emu(h)}"/></a:xfrm>
-    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>{fx}<a:ln><a:noFill/></a:ln></p:spPr>
-    <p:txBody><a:bodyPr/><a:lstStyle/><a:p/></p:txBody></p:sp>'''
+<p:nvSpPr><p:cNvPr id="2" name="r"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr>
+<p:spPr><a:xfrm><a:off x="{emu(x)}" y="{emu(y)}"/><a:ext cx="{emu(w)}" cy="{emu(h)}"/></a:xfrm>
+<a:prstGeom prst="{prst}">{avl}</a:prstGeom>{fx}<a:ln><a:noFill/></a:ln></p:spPr>
+<p:txBody><a:bodyPr/><a:lstStyle/><a:p/></p:txBody></p:sp>'''
 
-def img(rId, x,y,w,h):
+def img(rId,x,y,w,h):
     return f'''<p:pic>
-    <p:nvPicPr><p:cNvPr id="10" name="img"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr>
-    <p:blipFill><a:blip r:embed="{rId}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>
-    <p:spPr><a:xfrm><a:off x="{emu(x)}" y="{emu(y)}"/><a:ext cx="{emu(w)}" cy="{emu(h)}"/></a:xfrm>
-    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>'''
+<p:nvPicPr><p:cNvPr id="10" name="img"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr>
+<p:blipFill><a:blip r:embed="{rId}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>
+<p:spPr><a:xfrm><a:off x="{emu(x)}" y="{emu(y)}"/><a:ext cx="{emu(w)}" cy="{emu(h)}"/></a:xfrm>
+<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>'''
+
+def frame(x,y,w,h,color=CYAN,t=0.06):
+    s  = rect(x,y,w,t,color)
+    s += rect(x,y+h-t,w,t,color)
+    s += rect(x,y,t,h,color)
+    s += rect(x+w-t,y,t,h,color)
+    return s
 
 def sxml(shapes):
     return f'''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
        xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
        xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <p:cSld><p:spTree>
-    <p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
-    <p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/>
-    <a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>
-    {shapes}
-  </p:spTree></p:cSld>
-  <p:clrMapOvr><a:masterClr/></p:clrMapOvr></p:sld>'''
+<p:cSld><p:spTree>
+<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
+<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/>
+<a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>
+{shapes}
+</p:spTree></p:cSld>
+<p:clrMapOvr><a:masterClr/></p:clrMapOvr></p:sld>'''
 
 # ═══════════════════════════════════════════
-# SLAYD SHABLONLARI
+# SLAYD QURILISH FUNKSIYALARI
 # ═══════════════════════════════════════════
 
-def title_slide():
-    s = ""
-    s += rect(0,0,33.87,19.05, DARK)
-    s += rect(0,0,33.87,0.7, PURP)
-    s += rect(0,18.35,33.87,0.7, CYAN)
-    s += rect(1.5,2.0,30.87,14.5, DARK2, alpha=70000)
-    s += rect(1.5,2.0,30.87,0.1, CYAN)
-    # Universitet
-    s += tbox(2,0.1,30,1.5, para(run("O'ZBEKISTON RESPUBLIKASI | TATU SAMARQAND FILIALI | 2026",11,False,CYAN,True),"c"))
-    # BMI belgisi
-    s += tbox(2,2.4,30,1.1, para(run("⚡  BITIRUV MALAKAVIY ISHI  ⚡",13,False,GOLD),"c"))
+def header(title, snum=None):
+    """Sarlavha paneli"""
+    s  = rect(0,0,33.87,2.8, DARK3)
+    s += rect(0,2.7,33.87,0.12, CYAN)
+    s += rect(0.4,0.35,0.28,2.1, PURP)
+    s += tbox(1.0,0.3,31.5,2.2, para(run(title,21,True,WHITE),"l"))
+    if snum:
+        s += tbox(32,17.8,1.5,0.9, para(run(str(snum),11,False,CYAN),"r"))
+    return s
+
+def bg(dark=True):
+    c = DARK if dark else DARK2
+    return rect(0,0,33.87,19.05,c)
+
+# ─── SLAYD 1: MUQOVA ───────────────────────
+def s1_muqova():
+    s  = bg()
+    s += rect(0,0,33.87,0.7,PURP)
+    s += rect(0,18.35,33.87,0.7,CYAN)
+    s += rect(2,1.8,29.87,14.8,DARK2,alpha=75000,rx=18000)
+    s += rect(2,1.8,29.87,0.1,CYAN)
+    s += frame(2,1.8,29.87,14.8,PURP,0.05)
+    # Univ
+    s += tbox(2.5,1.9,28.5,1.3, para(run("O'ZBEKISTON RESPUBLIKASI  |  TATU SAMARQAND FILIALI  |  2026",10,False,CYAN,True),"c"))
+    # Badge
+    s += tbox(2.5,3.2,28.5,1.2, para(run("⚡  BITIRUV MALAKAVIY ISHI  ⚡",13,False,GOLD),"c"))
     # Sarlavha
-    s += tbox(2,3.7,30,3.5,
-        para(run("Dasturiy versiyalar orasidagi",22,True,WHITE),"c") +
-        para(run("o'zgarishlarni tahlil qiluvchi",22,True,WHITE),"c") +
-        para(run("dasturiy tizimni loyihalashtirish",22,True,WHITE),"c"))
-    s += rect(5,7.7,24,0.08,CYAN)
-    # Ma'lumotlar
-    s += tbox(2,8.1,30,6.5,
-        para(run("Bitiruvchi:",13,True,CYAN)+run("  Amonov Sohibjon",13,False,WHITE),"c",80) +
-        para(run("Ilmiy rahbar:",13,True,CYAN)+run("  Yusupov O.",13,False,WHITE),"c",80) +
-        para(run("Kafedra:",13,True,CYAN)+run("  Dasturiy injiniring",13,False,WHITE),"c",80) +
+    s += tbox(2.5,4.5,28.5,4.5,
+        para(run("Dasturiy versiyalar orasidagi",24,True,WHITE),"c",60) +
+        para(run("o'zgarishlarni tahlil qiluvchi",24,True,WHITE),"c",60) +
+        para(run("dasturiy tizimni loyihalashtirish",24,True,WHITE),"c",60))
+    s += rect(6,9.5,22,0.08,CYAN)
+    # Info
+    s += tbox(2.5,9.8,28.5,6.0,
+        para(run("Bitiruvchi:",13,True,CYAN)+run("  Amonov Sohibjon",13,False,WHITE),"c",100) +
+        para(run("Ilmiy rahbar:",13,True,CYAN)+run("  Yusupov O.",13,False,WHITE),"c",90) +
+        para(run("HFX maslahatchi:",13,True,CYAN)+run("  Rajabov J.",13,False,WHITE),"c",90) +
+        para(run("Kafedra:",13,True,CYAN)+run("  Dasturiy injiniring",13,False,WHITE),"c",90) +
         para(run(""),"c",80) +
-        para(run("React  •  Node.js  •  Express.js  •  Google Gemini AI  •  Git",11,False,LGRAY,True),"c",80))
+        para(run("React  •  Node.js  •  Express.js  •  Google Gemini AI",11,False,LGRAY,True),"c",80))
     return s
 
-def section_slide(num, title, items):
-    s = ""
-    s += rect(0,0,33.87,19.05, DARK)
-    s += rect(0,0,33.87,0.6, PURP)
-    s += rect(0,18.45,33.87,0.6, CYAN)
-    s += rect(1.5,3.5,5,5.5, DARK2, alpha=80000)
-    s += tbox(1.5,3.5,5,5.5, para(run(str(num),58,True,CYAN),"c"))
-    s += rect(7,4,24,4.5, DARK2, alpha=50000)
-    s += rect(7,4,24,0.1, CYAN)
-    words = title.split()
-    mid = len(words)//2
-    s += tbox(7.3,4.5,23.4,3.5,
-        para(run(" ".join(words[:mid]),22,True,WHITE),"l") +
-        para(run(" ".join(words[mid:]),22,True,WHITE),"l"))
-    s += rect(1.5,10,31,8, DARK2, alpha=40000)
-    items_xml = ""
-    for item in items:
-        items_xml += para(run("  ▸  ",12,False,CYAN)+run(item,12,False,LGRAY),"l",60)
-    s += tbox(2,10.5,30,7.5, items_xml)
+# ─── SLAYD 2: REJA (MUNDARIJA) ─────────────
+def s2_reja():
+    s  = bg()
+    s += header("MUNDARIJA")
+    # 2 ustun
+    # Chap
+    s += rect(0.5,3.1,16,15.3,DARK2,alpha=70000,rx=10000)
+    s += rect(0.5,3.1,16,0.1,CYAN)
+    left = [
+        ("KIRISH","Mavzuning dolzarbligi va tadqiqot maqsadi"),
+        ("I BOB","Nazariy asoslar"),
+        ("  1.1","VCS tizimlarining o'rni va ahamiyati"),
+        ("  1.2","Diff tahlil metodologiyasi"),
+        ("  1.3","LLM texnologiyalari integratsiyasi"),
+    ]
+    lxml = ""
+    for num, title in left:
+        if num.startswith("  "):
+            lxml += para(run(f"    {num.strip()}  ",11,False,CYAN)+run(title,11,False,LGRAY),"l",60)
+        else:
+            lxml += para(run(f"  {num}  ",12,True,GOLD)+run(title,12,True,WHITE),"l",80)
+    s += tbox(0.8,3.3,15.4,14.7, lxml)
+
+    # O'ng
+    s += rect(17,3.1,16.4,15.3,DARK2,alpha=70000,rx=10000)
+    s += rect(17,3.1,16.4,0.1,PURP)
+    right = [
+        ("II BOB","Arxitektura va loyihalashtirish"),
+        ("  2.1","Funksional talablar va 5 modul"),
+        ("  2.2","Router-Controller arxitektura + Blok-sxema"),
+        ("  2.3","Frontend-Backend integratsiyasi"),
+        ("III BOB","Amaliy realizatsiya"),
+        ("  3.1","Node.js/Express.js backend"),
+        ("  3.2","React SPA frontend"),
+        ("  3.3","Sinov natijalari va AI hisobotlar"),
+        ("XULOSA","Natijalar va takliflar"),
+    ]
+    rxml = ""
+    for num, title in right:
+        if num.startswith("  "):
+            rxml += para(run(f"    {num.strip()}  ",11,False,CYAN)+run(title,11,False,LGRAY),"l",55)
+        else:
+            rxml += para(run(f"  {num}  ",12,True,GOLD)+run(title,12,True,WHITE),"l",75)
+    s += tbox(17.3,3.3,15.8,14.7, rxml)
     return s
 
-def content_slide(title, bullets, snum):
-    s = ""
-    s += rect(0,0,33.87,19.05, DARK2)
-    s += rect(0,0,33.87,2.8, "0a1628")
-    s += rect(0,2.7,33.87,0.12, CYAN)
-    s += rect(0.5,0.4,0.3,1.9, CYAN)
-    s += tbox(1.2,0.3,31,2.2, para(run(title,21,True,WHITE),"l"))
-    s += tbox(31.5,17.8,2,1, para(run(str(snum),11,False,CYAN),"r"))
-    cxml = ""
-    for b in bullets:
-        if b.startswith("══") or b.startswith("──"):
-            cxml += para(run(""),"l",20)
-            continue
-        cl = WHITE; sz = 13; bold = False
-        if b.startswith("📌") or b.startswith("✅") or b.startswith("🔷"):
-            cl = GREEN; bold = True
-        elif b.startswith("⚠") or b.startswith("❌"):
-            cl = RED
-        elif b.startswith("  ") or b.startswith("   "):
-            cl = LGRAY; sz = 12
-        elif b.startswith("▸") or b.startswith("•"):
-            cl = CYAN; bold = True
-        cxml += para(run(b,sz,bold,cl),"l",40)
-    s += tbox(0.8,3.0,32.5,15.5, cxml)
+# ─── SLAYD 3: KIRISH ───────────────────────
+def s3_kirish():
+    s  = bg(False)
+    s += header("KIRISH", 3)
+    # Chiroyli ramka ichida matn
+    s += rect(0.5,3.1,32.87,15.2,DARK3,alpha=80000,rx=12000)
+    s += frame(0.5,3.1,32.87,15.2,CYAN,0.07)
+    # Yuqori label
+    s += rect(1.2,2.7,12,0.9,PURP,rx=8000)
+    s += tbox(1.2,2.65,12,0.9, para(run("  📋  Mavzuning dolzarbligi",10,True,WHITE),"l"))
+
+    ktext = [
+        "Axborot-kommunikatsiya texnologiyalarining shiddatli rivojlanishi davrida yuqori",
+        "sifatli dasturiy ta'minot mahsulotlarini ishlab chiqish strategik yo'nalishga aylandi.",
+        "",
+        "Zamonaviy dasturiy mahsulotlar murakkab ko'p qatlamli arxitekturaga ega bo'lib,",
+        "ularning hayotiy sikli davomida jamoalar tomonidan minglab o'zgarishlar kiritiladi.",
+        "",
+        "Muammo: Mavjud Diff vositalari o'zgarishlarni FAQAT sintaktik darajada ko'rsatadi —",
+        "mantiqiy ma'nosi, xavfsizlikka ta'siri tushuntirilmaydi.",
+        "",
+        "Yechim: LLM texnologiyasini integratsiya qilish — Google Gemini 2.5 Flash modeli",
+        "yordamida o'zbek tilida professional semantik hisobot generatsiya qilish.",
+        "",
+        "Maqsad: Versiyalar o'zgarishlarini tahlil qiluvchi SPA veb-platforma yaratish.",
+        "",
+        "Tadqiqot predmeti: Diff algoritmlari, JS asinxron metodlar, LLM semantik tahlil.",
+        "",
+        "Metodlar: OOD, Router-Controller, Prompt Engineering, Git oqimlarini boshqarish.",
+    ]
+    kxml = ""
+    for line in ktext:
+        if line == "":
+            kxml += para(run(""),"l",25)
+        elif line.startswith("Muammo") or line.startswith("Yechim") or line.startswith("Maqsad") or line.startswith("Tadqiqot") or line.startswith("Metodlar"):
+            kxml += para(run(line,13,True,CYAN),"l",45)
+        else:
+            kxml += para(run(line,13,False,WHITE),"l",35)
+    s += tbox(1.2,3.4,31.5,14.5, kxml)
     return s
 
-def img_right_slide(title, rId, bullets, snum):
-    """Rasm chap, matn o'ng"""
-    s = ""
-    s += rect(0,0,33.87,19.05, DARK2)
-    s += rect(0,0,33.87,2.8, "0a1628")
-    s += rect(0,2.7,33.87,0.12, CYAN)
-    s += rect(0.5,0.4,0.3,1.9, CYAN)
-    s += tbox(1.2,0.3,31,2.2, para(run(title,21,True,WHITE),"l"))
-    s += tbox(31.5,17.8,2,1, para(run(str(snum),11,False,CYAN),"r"))
-    # Rasm chap taraf
-    s += img(rId, 0.5, 2.9, 22, 14.5)
-    # Ramka
-    t = 0.06
-    s += rect(0.5-t, 2.9-t, 22+2*t, t, CYAN)
-    s += rect(0.5-t, 2.9+14.5, 22+2*t, t, CYAN)
-    s += rect(0.5-t, 2.9-t, t, 14.5+2*t, CYAN)
-    s += rect(0.5+22, 2.9-t, t, 14.5+2*t, CYAN)
-    # O'ng matn paneli
-    s += rect(23.2,2.9,10.3,14.5, "0a1628", alpha=90000)
-    s += rect(23.2,2.9,0.1,14.5, CYAN)
-    bxml = ""
-    for b in bullets:
-        if b.startswith("══"):
-            bxml += para(run(""),"l",40)
-            continue
-        cl = LGRAY; sz = 12; bold = False
-        if b.startswith("✅") or b.startswith("📌"):
-            cl = GREEN; bold = True
-        elif b.startswith("▸"):
-            cl = CYAN
-        bxml += para(run(" "+b,sz,bold,cl),"l",100)
-    s += tbox(23.5,3.2,9.8,13.8, bxml)
+# ─── SLAYD 4: 1.1 ──────────────────────────
+def s4_1_1():
+    s  = bg(False)
+    s += header("1.1 — VCS Tizimlarining O'rni va Ahamiyati", 4)
+    s += rect(0.5,3.1,32.87,15.3,DARK3,alpha=80000,rx=8000)
+    s += frame(0.5,3.1,32.87,15.3,PURP,0.05)
+
+    lines = [
+        ("h","Versiyalarni Boshqarish Tizimi (VCS) nima?"),
+        ("t","Fayllar yoki dasturiy kodlarga kiritilgan har qanday o'zgarishlarni vaqtlar kesimida qayd etuvchi,"),
+        ("t","zarur bo'lganda loyihani o'tmishdagi istalgan holatiga qaytarish imkonini beruvchi dasturiy muhit."),
+        ("",""),
+        ("h","VCS Tarixiy Rivojlanish Bosqichlari:"),
+        ("b","🔸 LOKAL VCS"),
+        ("t","  Barcha fayllar tarixi faqat shaxsiy kompyuterda. Jamoaviy ishlash MUMKIN EMAS."),
+        ("b","🔸 MARKAZLASHTIRILGAN (CVCS) — SVN, CVS"),
+        ("t","  Yagona server. Kamchilik: server o'chsa butun loyiha tarixi yo'qoladi."),
+        ("b","✅ TAQSIMLANGAN (DVCS) — Git (2005-hozir, dunyo standarti)"),
+        ("t","  Har dasturchi to'liq repozitoriyaga ega. Lokal operatsiyalar sekunddan kam."),
+        ("t","  Snapshot asosida saqlash. Branch = 41 baytlik ko'rsatgich."),
+        ("",""),
+        ("h","Code Review va muammo:"),
+        ("t","Git'ning Pull Request mexanizmi orqali jamoa a'zolari kodni tekshiradi."),
+        ("t","Yirik loyihalarda qo'lda tekshirish inson resursini ko'p talab qiladi va xatolar o'tib ketadi."),
+    ]
+    xml = ""
+    for tp, line in lines:
+        if tp == "": xml += para(run(""),"l",15)
+        elif tp == "h": xml += para(run(line,13,True,GOLD),"l",50)
+        elif tp == "b": xml += para(run(line,13,True,GREEN),"l",45)
+        else: xml += para(run(line,12,False,WHITE),"l",35)
+    s += tbox(1.0,3.3,31.8,14.8, xml)
     return s
 
-def img_full_slide(title, rId, caption, snum):
-    """Rasm katta, pastda izoh"""
-    s = ""
-    s += rect(0,0,33.87,19.05, DARK2)
-    s += rect(0,0,33.87,2.8, "0a1628")
-    s += rect(0,2.7,33.87,0.12, CYAN)
-    s += rect(0.5,0.4,0.3,1.9, CYAN)
-    s += tbox(1.2,0.3,31,2.2, para(run(title,21,True,WHITE),"l"))
-    s += tbox(31.5,17.8,2,1, para(run(str(snum),11,False,CYAN),"r"))
-    # Rasm to'liq
-    s += img(rId, 1.0, 2.9, 31.87, 13.5)
-    # Ramka
-    s += rect(1.0,2.9,31.87,0.06,CYAN)
-    s += rect(1.0,16.4,31.87,0.06,CYAN)
-    # Pastki izoh
-    s += rect(1.0,16.5,31.87,2.0, "0a1628", alpha=90000)
-    bxml = ""
-    for c in caption:
-        bxml += para(run("  ▸  ",11,False,CYAN)+run(c,11,False,LGRAY),"l",30)
-    s += tbox(1.5,16.5,31,2.0, bxml)
+# ─── SLAYD 5: 1.2 ──────────────────────────
+def s5_1_2():
+    s  = bg(False)
+    s += header("1.2 — Diff Tahlil Metodologiyasi va Vositalar Sharhi", 5)
+    s += rect(0.5,3.1,32.87,15.3,DARK3,alpha=80000,rx=8000)
+    s += frame(0.5,3.1,32.87,15.3,PURP,0.05)
+
+    lines = [
+        ("h","Differensial Tahlil (Diff) nima?"),
+        ("t","Ikki xil dasturiy kod versiyalari orasidagi farqlarni aniqlash jarayoni."),
+        ("t","Asosi: LCS (Longest Common Subsequence) — Eng uzun umumiy ketma-ketlik algoritmi."),
+        ("",""),
+        ("h","Asosiy Algoritmlar:"),
+        ("b","📊 MAYERS ALGORITMI (Eugene Myers, 1986) — Git standart"),
+        ("t","  Eng qisqa tahrirlash skriptini topadi. Unified Diff format hosil qiladi."),
+        ("b","📊 PATIENCE DIFF — noyob qatorlarga tayanadi"),
+        ("t","  Rename va refaktoring operatsiyalarida aniqroq natija beradi."),
+        ("b","📊 HISTOGRAM DIFF — chastota asosida"),
+        ("t","  Katta loyihalarda eng yuqori tezlik va aniqlik."),
+        ("",""),
+        ("h","jsdiff kutubxonasi (loyihamizda):"),
+        ("t","Mayers algoritmining JavaScript realizatsiyasi. parsePatch() funksiyasi orqali"),
+        ("t","Git diff matnini JSON massiviga o'tkazadi. Frontend vizualizatsiya uchun tayyorlaydi."),
+        ("",""),
+        ("h","⚠ Asosiy cheklov:"),
+        ("t","Barcha algoritmlar FAQAT sintaktik — mantiqiy ma'no, xavfsizlik ta'siri aniqlanmaydi!"),
+    ]
+    xml = ""
+    for tp, line in lines:
+        if tp == "": xml += para(run(""),"l",12)
+        elif tp == "h": xml += para(run(line,13,True,GOLD),"l",45)
+        elif tp == "b": xml += para(run(line,13,True,CYAN),"l",40)
+        else: xml += para(run(line,12,False,WHITE),"l",30)
+    s += tbox(1.0,3.3,31.8,14.8, xml)
     return s
 
-def final_slide():
-    s = ""
-    s += rect(0,0,33.87,19.05, DARK)
-    s += rect(0,0,33.87,0.6, CYAN)
-    s += rect(0,18.45,33.87,0.6, CYAN)
-    s += rect(3,2.5,27.87,14, DARK2)
-    s += rect(3,2.5,27.87,0.12, PURP)
-    s += rect(3,16.38,27.87,0.12, PURP)
+# ─── SLAYD 6: 1.3 + JADVAL ────────────────
+def s6_1_3():
+    s  = bg(False)
+    s += header("1.3 — LLM Texnologiyalarini Dasturiy Kod Tahliliga Integratsiya", 6)
+
+    # Chap matn
+    s += rect(0.4,3.1,18.5,15.3,DARK3,alpha=80000,rx=8000)
+    s += frame(0.4,3.1,18.5,15.3,PURP,0.05)
+    lines = [
+        ("h","LLM nima?"),
+        ("t","Transformer arxitekturasiga asoslangan"),
+        ("t","katta til modellari. Kod mantiqini"),
+        ("t","tushunib, tabiiy tilda izohlaydi."),
+        ("",""),
+        ("h","Google Gemini 2.5 Flash:"),
+        ("b","✅ 1 MILLON token kontekst"),
+        ("t","  Butun diff bitta so'rovda"),
+        ("b","✅ O'zbek tilini tushunadi"),
+        ("t","  Milliy terminologiya"),
+        ("b","✅ Streaming JSON javob"),
+        ("t","  Past kechikish, yuqori tezlik"),
+        ("",""),
+        ("h","3 qatlamli Prompt Engineering:"),
+        ("t","1) System Prompt — mutaxassis roli"),
+        ("t","2) Context — diff + meta-ma'lumot"),
+        ("t","3) Output — Markdown format"),
+    ]
+    xml = ""
+    for tp, line in lines:
+        if tp == "": xml += para(run(""),"l",12)
+        elif tp == "h": xml += para(run(line,12,True,GOLD),"l",40)
+        elif tp == "b": xml += para(run(line,12,True,GREEN),"l",35)
+        else: xml += para(run(line,11,False,WHITE),"l",28)
+    s += tbox(0.7,3.3,17.8,14.8, xml)
+
+    # O'ng — taqqoslash jadvali
+    s += rect(19.3,3.1,14.1,15.3,DARK3,alpha=80000,rx=8000)
+    s += frame(19.3,3.1,14.1,15.3,CYAN,0.05)
+    s += rect(19.3,3.1,14.1,0.9,CYAN,alpha=40000)
+    s += tbox(19.3,3.1,14.1,0.9, para(run("  Taqqoslash Jadvali",11,True,WHITE),"c"))
+
+    rows = [
+        ("Xususiyat","An'anaviy Diff","LLM (Gemini)"),
+        ("Tahlil turi","Sintaktik","Semantik"),
+        ("Mantiq","❌ Yo'q","✅ Bor"),
+        ("Xavfsizlik","❌ Yo'q","✅ Aniqlaydi"),
+        ("Til","Kod","O'zbek tili"),
+        ("Tezlik","Tez","<5 sekund"),
+        ("Auto-fix","❌","✅ Kod beradi"),
+    ]
+    row_colors = [PURP, None, None, None, None, None, None]
+    ry = 4.1
+    for i,(c1,c2,c3) in enumerate(rows):
+        bg_row = PURP if i == 0 else ("0a1a2e" if i%2==0 else "0d2040")
+        s += rect(19.4,ry,14,0.92,bg_row,alpha=60000)
+        bold = (i==0)
+        cl1 = GOLD if i==0 else LGRAY
+        cl2 = GOLD if i==0 else (RED if "❌" in c2 else (GREEN if "✅" in c2 else WHITE))
+        cl3 = GOLD if i==0 else (GREEN if "✅" in c3 else WHITE)
+        s += tbox(19.5,ry+0.06,4.5,0.82, para(run(c1,10,bold,cl1),"c"))
+        s += tbox(24.1,ry+0.06,4.5,0.82, para(run(c2,10,bold,cl2),"c"))
+        s += tbox(28.7,ry+0.06,4.5,0.82, para(run(c3,10,bold,cl3),"c"))
+        # ustun chiziqlari
+        s += rect(24.0,ry,0.04,0.92,CYAN,alpha=50000)
+        s += rect(28.6,ry,0.04,0.92,CYAN,alpha=50000)
+        ry += 0.94
+    return s
+
+# ─── SLAYD 7: 2.1 + HOME PAGE rasmi ────────
+def s7_2_1(img_rId):
+    s  = bg(False)
+    s += header("2.1 — Funksional Talablar: Bosh Sahifa (Home Page)", 7)
+
+    # Chap — rasm
+    s += img(img_rId, 0.4, 2.9, 20.5, 13.5)
+    s += frame(0.4, 2.9, 20.5, 13.5, CYAN, 0.07)
+    s += rect(0.4,16.45,20.5,0.7,DARK3,alpha=90000)
+    s += tbox(0.4,16.48,20.5,0.65, para(run("  📸  Home Page — Tizimning kirish moduli",9,False,CYAN),"l"))
+
+    # O'ng — matn
+    s += rect(21.4,2.9,12,13.5,DARK3,alpha=85000,rx=8000)
+    s += frame(21.4,2.9,12,13.5,PURP,0.05)
+    s += rect(21.4,2.9,12,0.85,PURP,alpha=40000)
+    s += tbox(21.4,2.9,12,0.85, para(run("  Funksional vazifalar",10,True,WHITE),"l"))
+
+    lines = [
+        ("GitHub/GitLab URL qabul qilish","t"),
+        ("Regex validatsiya + xavfsizlik tekshiruvi","t"),
+        ("",""),
+        ("Progressiv yuklanish animatsiyasi","t"),
+        ("Tayyor repozitoriyalar ro'yxati","t"),
+        ("",""),
+        ("Dark Mode + Neon effektli dizayn","t"),
+        ("Kirish qayta ishlash mantiqiy zanjiri:","h"),
+        ("  URL → Validatsiya → Backend clone","t"),
+        ("  → Commits sahifasiga yo'naltirish","t"),
+        ("",""),
+        ("Nofunksional talablar:","h"),
+        ("  API javob vaqti < 200ms","t"),
+        ("  CORS himoya protokoli","t"),
+        ("  Input sanitizatsiya (XSS himoya)","t"),
+    ]
+    rxml = ""
+    for line, tp in lines:
+        if line == "": rxml += para(run(""),"l",10)
+        elif tp == "h": rxml += para(run(line,11,True,GOLD),"l",35)
+        else: rxml += para(run("▸ "+line,11,False,WHITE),"l",28)
+    s += tbox(21.6,3.9,11.5,12, rxml)
+    return s
+
+# ─── SLAYD 8: 2.1 davomi + COMMITS rasmi ──
+def s8_commits(img_rId):
+    s  = bg(False)
+    s += header("2.1 — Commits Sahifasi: Repository Explorer", 8)
+
+    s += img(img_rId, 0.4, 2.9, 20.5, 13.5)
+    s += frame(0.4, 2.9, 20.5, 13.5, CYAN, 0.07)
+    s += rect(0.4,16.45,20.5,0.7,DARK3,alpha=90000)
+    s += tbox(0.4,16.48,20.5,0.65, para(run("  📸  Commits sahifasi — Repository Explorer",9,False,CYAN),"l"))
+
+    s += rect(21.4,2.9,12,13.5,DARK3,alpha=85000,rx=8000)
+    s += frame(21.4,2.9,12,13.5,PURP,0.05)
+    s += rect(21.4,2.9,12,0.85,PURP,alpha=40000)
+    s += tbox(21.4,2.9,12,0.85, para(run("  Commits sahifasi",10,True,WHITE),"l"))
+
+    lines = [
+        ("Backend klonlashdan so'ng avtomatik ochiladi","t"),
+        ("",""),
+        ("4 ta statistik kartochka:","h"),
+        ("  Jami commitlar soni","t"),
+        ("  Jami qo'shilgan/o'chirilgan qatorlar","t"),
+        ("  Mualliflar soni","t"),
+        ("  O'zgargan fayllar soni","t"),
+        ("",""),
+        ("Qidiruv va saralash:","h"),
+        ("  Commit xabar matni bo'yicha","t"),
+        ("  Muallif ismi bo'yicha","t"),
+        ("  Commit ID bo'yicha","t"),
+        ("",""),
+        ("Commit tanlash:","h"),
+        ("  To'liq ob'ekt xotirada saqlanadi","t"),
+        ("  Diff sahifasiga uzatiladi","t"),
+    ]
+    rxml = ""
+    for line, tp in lines:
+        if line == "": rxml += para(run(""),"l",10)
+        elif tp == "h": rxml += para(run(line,11,True,GOLD),"l",35)
+        else: rxml += para(run("▸ "+line,11,False,WHITE),"l",28)
+    s += tbox(21.6,3.9,11.5,12, rxml)
+    return s
+
+# ─── SLAYD 9: 2.2 + BLOK-SXEMA ────────────
+def s9_2_2_bloksxema(img_rId):
+    s  = bg(False)
+    s += header("2.2 — Router-Controller Andozasi va Axborot Oqimlari", 9)
+
+    # Matn tepada
+    s += rect(0.4,2.9,32.87,4.2,DARK3,alpha=80000,rx=8000)
+    s += frame(0.4,2.9,32.87,4.2,PURP,0.05)
+
+    text_lines = [
+        ("Router qatlami (routes/)","h"),
+        ("gitRoutes.js → /api/git/clone, /api/git/commits, /api/git/diff  |  aiRoutes.js → /api/ai/analyze","t"),
+        ("Controller qatlami (controllers/)","h"),
+        ("gitController.js → simple-git: clone, log, diff  |  aiController.js → Gemini SDK + Prompt Engineering","t"),
+        ("Afzallik: LOOSE COUPLING — Gemini o'rniga boshqa LLM = FAQAT 1 fayl o'zgartirish!","b"),
+    ]
+    txml = ""
+    for line, tp in text_lines:
+        if tp == "h": txml += para(run(line,12,True,GOLD),"l",40)
+        elif tp == "b": txml += para(run("✅ "+line,12,True,GREEN),"l",40)
+        else: txml += para(run(line,11,False,LGRAY),"l",25)
+    s += tbox(0.8,3.0,32,3.9, txml)
+
+    # Blok-sxema rasmi
+    s += img(img_rId, 0.4, 7.3, 32.87, 10.5)
+    s += frame(0.4, 7.3, 32.87, 10.5, CYAN, 0.07)
+    s += rect(0.4,17.8,32.87,0.7,DARK3,alpha=90000)
+    s += tbox(0.4,17.83,32.87,0.65, para(run("  📊  Axborot oqimlari arxitekturasi blok-sxemasi",9,False,CYAN),"l"))
+    return s
+
+# ─── SLAYD 10: 2.3 + DIFF VIEWER rasmi ────
+def s10_diff(img_rId):
+    s  = bg(False)
+    s += header("2.3 — Diff Viewer: Frontend-Backend Integratsiyasi", 10)
+
+    s += img(img_rId, 0.4, 2.9, 20.5, 13.5)
+    s += frame(0.4, 2.9, 20.5, 13.5, CYAN, 0.07)
+    s += rect(0.4,16.45,20.5,0.7,DARK3,alpha=90000)
+    s += tbox(0.4,16.48,20.5,0.65, para(run("  📸  Diff Viewer — Kod o'zgarishlari vizualizatsiyasi",9,False,CYAN),"l"))
+
+    s += rect(21.4,2.9,12,13.5,DARK3,alpha=85000,rx=8000)
+    s += frame(21.4,2.9,12,13.5,PURP,0.05)
+    s += rect(21.4,2.9,12,0.85,PURP,alpha=40000)
+    s += tbox(21.4,2.9,12,0.85, para(run("  Diff Viewer va Integratsiya",10,True,WHITE),"l"))
+
+    lines = [
+        ("Diff Viewer vazifalari:","h"),
+        ("  Yashil (+): qo'shilgan qatorlar","t"),
+        ("  Qizil (-): o'chirilgan qatorlar","t"),
+        ("  Chap panel: fayllar ro'yxati","t"),
+        ("  'AI izohi' tugmasi → Gemini","t"),
+        ("",""),
+        ("RESTful integratsiya:","h"),
+        ("  Axios asinxron HTTP so'rovlari","t"),
+        ("  Global baseURL + interceptorlar","t"),
+        ("  Loading state animatsiyasi","t"),
+        ("",""),
+        ("CORS xavfsizlik:","h"),
+        ("  Faqat ruxsat etilgan domenlar","t"),
+        ("  CSRF hujumlardan himoya","t"),
+        ("",""),
+        ("State Management:","h"),
+        ("  App.jsx markaziy useState","t"),
+        ("  5 sahifaga prop drilling","t"),
+    ]
+    rxml = ""
+    for line, tp in lines:
+        if line == "": rxml += para(run(""),"l",8)
+        elif tp == "h": rxml += para(run(line,11,True,GOLD),"l",30)
+        else: rxml += para(run(line,11,False,WHITE),"l",22)
+    s += tbox(21.6,3.9,11.5,12, rxml)
+    return s
+
+# ─── SLAYD 11: 3.1 Backend ─────────────────
+def s11_backend():
+    s  = bg(False)
+    s += header("3.1 — Node.js/Express.js Backend Realizatsiyasi", 11)
+
+    # 2 ustun
+    s += rect(0.4,3.1,16.2,15.2,DARK3,alpha=80000,rx=8000)
+    s += frame(0.4,3.1,16.2,15.2,PURP,0.05)
+    s += rect(0.4,3.1,16.2,0.85,PURP,alpha=40000)
+    s += tbox(0.4,3.1,16.2,0.85, para(run("  Texnik stack",10,True,WHITE),"l"))
+
+    left = [
+        ("Node.js","Non-blocking I/O, EventLoop, 50+ parallel so'rov"),
+        ("Express.js","Router-Controller andoza, CORS, middleware"),
+        ("simple-git","clone, log, diff, pull — Git operatsiyalari"),
+        ("jsdiff","Mayers algoritmi, JSON parsing, structured output"),
+        ("Gemini SDK","@google/generative-ai, Prompt injection"),
+        ("dotenv","API kalitlar muhit o'zgaruvchilari"),
+        ("cors","Cross-Origin xavfsizlik protokoli"),
+    ]
+    lxml = ""
+    for tech, desc in left:
+        lxml += para(run("▸ ",11,False,CYAN)+run(tech,11,True,GOLD),"l",40)
+        lxml += para(run("   "+desc,10,False,LGRAY),"l",20)
+    s += tbox(0.7,4.1,15.5,13.8, lxml)
+
+    s += rect(17,3.1,16.3,15.2,DARK3,alpha=80000,rx=8000)
+    s += frame(17,3.1,16.3,15.2,CYAN,0.05)
+    s += rect(17,3.1,16.3,0.85,CYAN,alpha=30000)
+    s += tbox(17,3.1,16.3,0.85, para(run("  Asosiy funksionallik",10,True,WHITE),"l"))
+
+    right = [
+        ("Klonlash optimizatsiyasi:","Repo mavjud bo'lsa pull, yo'q bo'lsa clone"),
+        ("Kesh mexanizmi:","Lokal disk — qayta so'rovda internet yo'q"),
+        ("Error Handling:","try/catch + Global Middleware, HTTP 400/404/500"),
+        ("URL validatsiya:","Regex sanitizatsiya, XSS himoya"),
+        ("Diff parsing:","Raw patch → JSON massiv → Frontend"),
+        ("Prompt injection:","3 qatlamli prompt + o'zbek tili talabi"),
+    ]
+    rxml = ""
+    for title, desc in right:
+        rxml += para(run("✅ ",11,False,GREEN)+run(title,11,True,WHITE),"l",45)
+        rxml += para(run("   "+desc,10,False,LGRAY),"l",20)
+    s += tbox(17.3,4.1,15.7,13.8, rxml)
+    return s
+
+# ─── SLAYD 12: 3.2 + AI rasmi ──────────────
+def s12_ai(img_rId):
+    s  = bg(False)
+    s += header("3.2 — React SPA va AI Semantik Hisobot", 12)
+
+    s += img(img_rId, 0.4, 2.9, 20.5, 13.5)
+    s += frame(0.4, 2.9, 20.5, 13.5, CYAN, 0.07)
+    s += rect(0.4,16.45,20.5,0.7,DARK3,alpha=90000)
+    s += tbox(0.4,16.48,20.5,0.65, para(run("  📸  AI Semantik Hisobot — Google Gemini natijasi",9,False,CYAN),"l"))
+
+    s += rect(21.4,2.9,12,13.5,DARK3,alpha=85000,rx=8000)
+    s += frame(21.4,2.9,12,13.5,PURP,0.05)
+    s += rect(21.4,2.9,12,0.85,PURP,alpha=40000)
+    s += tbox(21.4,2.9,12,0.85, para(run("  React SPA va AI",10,True,WHITE),"l"))
+
+    lines = [
+        ("React SPA:","h"),
+        ("  useState + useEffect holat boshqaruvi","t"),
+        ("  Virtual DOM — faqat o'zgargan qayta chizish","t"),
+        ("  history.pushState — URL dinamik","t"),
+        ("",""),
+        ("AI Hisobot qismlari:","h"),
+        ("  Sintaktik o'zgarishlar tavsifi","t"),
+        ("  Biznes/xavfsizlik mantiqi tahlili","t"),
+        ("  Auto-fix tayyor kod namunalari","t"),
+        ("  Markdown formatida render","t"),
+        ("",""),
+        ("Hallucination himoya:","h"),
+        ("  Faqat berilgan diff asosida","t"),
+        ("  Tashqi manbaga tayanmaslik","t"),
+        ("",""),
+        ("Natija:","h"),
+        ("  O'zbek tilida professional hisobot","t"),
+    ]
+    rxml = ""
+    for line, tp in lines:
+        if line == "": rxml += para(run(""),"l",8)
+        elif tp == "h": rxml += para(run(line,11,True,GOLD),"l",30)
+        else: rxml += para(run(line,11,False,WHITE),"l",22)
+    s += tbox(21.6,3.9,11.5,12, rxml)
+    return s
+
+# ─── SLAYD 13: 3.3 + DASHBOARD rasmi ───────
+def s13_dashboard(img_rId):
+    s  = bg(False)
+    s += header("3.3 — Sinov Natijalari va Dashboard", 13)
+
+    s += img(img_rId, 0.4, 2.9, 20.5, 13.5)
+    s += frame(0.4, 2.9, 20.5, 13.5, CYAN, 0.07)
+    s += rect(0.4,16.45,20.5,0.7,DARK3,alpha=90000)
+    s += tbox(0.4,16.48,20.5,0.65, para(run("  📸  Dashboard — Loyiha analitikasi va monitoring",9,False,CYAN),"l"))
+
+    s += rect(21.4,2.9,12,13.5,DARK3,alpha=85000,rx=8000)
+    s += frame(21.4,2.9,12,13.5,PURP,0.05)
+    s += rect(21.4,2.9,12,0.85,PURP,alpha=40000)
+    s += tbox(21.4,2.9,12,0.85, para(run("  Sinov va Dashboard",10,True,WHITE),"l"))
+
+    lines = [
+        ("Sinov natijalari:","h"),
+        ("  ✅ Barcha 5 modul ishladi","t"),
+        ("  ✅ O'zbek tili — professional hisobot","t"),
+        ("  ✅ Xavfsizlik kamchiliklari aniqlandi","t"),
+        ("  ✅ Auto-fix kod namunalari berildi","t"),
+        ("",""),
+        ("O'lchovli natijalar:","h"),
+        ("  Code Review 40-50% tezlashdi","t"),
+        ("  Hallucination kamaytirish ishladi","t"),
+        ("",""),
+        ("Dashboard funksiyalari:","h"),
+        ("  Umumiy statistika kartochkalari","t"),
+        ("  Top fayllar progress-bar grafigi","t"),
+        ("  Dasturchilar reytingi (Leaderboard)","t"),
+        ("  Real vaqtda hisoblash","t"),
+    ]
+    rxml = ""
+    for line, tp in lines:
+        if line == "": rxml += para(run(""),"l",8)
+        elif tp == "h": rxml += para(run(line,11,True,GOLD),"l",30)
+        else: rxml += para(run(line,11,False,WHITE),"l",22)
+    s += tbox(21.6,3.9,11.5,12, rxml)
+    return s
+
+# ─── SLAYD 14: XULOSA ──────────────────────
+def s14_xulosa():
+    s  = bg(False)
+    s += header("XULOSA VA TAKLIFLAR", 14)
+    s += rect(0.4,3.1,32.87,15.3,DARK3,alpha=80000,rx=8000)
+    s += frame(0.4,3.1,32.87,15.3,CYAN,0.07)
+
+    lines = [
+        ("h","Xulosa"),
+        ("t","1. An'anaviy Diff vositalari sintaktik darajada qoladi — semantik tahlil uchun AI zarur."),
+        ("t","2. Router-Controller + React SPA arxitekturasi barqarorlik va tezkorlikni ta'minladi."),
+        ("t","3. Gemini 2.5 Flash — o'zbek tilida professional semantik hisobot muvaffaqiyatli ishladi."),
+        ("t","4. Real sinov: Code Review vaqti 40-50% qisqardi, kiberxavfsizlik muammolari aniqland."),
+        ("",""),
+        ("h","Takliflar va Istiqbollar"),
+        ("b","🔷 CI/CD Integratsiya — GitHub Actions plagin: har commitda avtomatik AI tahlil"),
+        ("b","🔷 Lokal LLM — Llama-3, CodeLlama: ma'lumotlar maxfiyligi, GDPR muvofiqlik"),
+        ("b","🔷 Shaxsiylashtirilgan Prompt — kompaniya ichki standartlariga moslash"),
+        ("b","🔷 Interaktiv vizualizatsiya — fayllararo bog'liqlik grafigi, arxitektura sxemasi"),
+        ("b","🔷 Ko'p tillik — rus, ingliz, qozoq tillarida semantik hisobotlar"),
+        ("",""),
+        ("h","Ilmiy yangilik"),
+        ("t","Kod o'zgarishlarini LLM yordamida o'ZBEK TILIDA semantik tahlil qilishning"),
+        ("t","integratsiyalashgan mantiqiy-arxitekturaviy modeli BIRINCHI MARTA ishlab chiqildi."),
+    ]
+    xml = ""
+    for tp, line in lines:
+        if tp == "": xml += para(run(""),"l",18)
+        elif tp == "h": xml += para(run(line,13,True,GOLD),"l",55)
+        elif tp == "b": xml += para(run(line,12,True,GREEN),"l",42)
+        else: xml += para(run(line,12,False,WHITE),"l",32)
+    s += tbox(0.8,3.3,32,14.8, xml)
+    return s
+
+# ─── SLAYD 15: RAHMAT ──────────────────────
+def s15_rahmat():
+    s  = bg()
+    s += rect(0,0,33.87,0.6,CYAN)
+    s += rect(0,18.45,33.87,0.6,CYAN)
+    s += rect(3,2.5,27.87,14,DARK2)
+    s += rect(3,2.5,27.87,0.12,PURP)
+    s += rect(3,16.38,27.87,0.12,PURP)
+    s += frame(3,2.5,27.87,14,CYAN,0.06)
     s += tbox(3,3.0,27.87,2.5,
-        para(run("🎓  E'tiboringiz uchun",26,True,CYAN),"c") +
-        para(run("RAHMAT!",34,True,WHITE),"c"))
+        para(run("🎓  E'tiboringiz uchun",26,True,CYAN),"c")+
+        para(run("RAHMAT!",36,True,WHITE),"c"))
     s += rect(7,6.2,20,0.1,CYAN)
     s += tbox(3,6.7,27.87,9,
-        para(run("Dasturiy versiyalar tahlil tizimi (SPA veb-platforma)",14,False,LGRAY,True),"c",120) +
-        para(run("─────────────────────────────────────",10,False,PURP),"c",60) +
-        para(run("Bitiruvchi:  Amonov Sohibjon",14,False,WHITE),"c",130) +
-        para(run("Ilmiy rahbar:  Yusupov O.",14,False,WHITE),"c",110) +
-        para(run("TATU Samarqand filiali  —  2026",13,False,LGRAY),"c",110) +
-        para(run("─────────────────────────────────────",10,False,PURP),"c",60) +
-        para(run("React  •  Node.js  •  Express.js  •  Google Gemini AI",12,False,CYAN,True),"c",130) +
-        para(run(""),"c",130) +
+        para(run("Dasturiy versiyalar orasidagi o'zgarishlarni tahlil qiluvchi tizim",14,False,LGRAY,True),"c",120)+
+        para(run("─────────────────────────────────────",10,False,PURP),"c",60)+
+        para(run("Bitiruvchi:  Amonov Sohibjon",14,False,WHITE),"c",130)+
+        para(run("Ilmiy rahbar:  Yusupov O.",14,False,WHITE),"c",110)+
+        para(run("TATU Samarqand filiali  —  2026",13,False,LGRAY),"c",110)+
+        para(run("─────────────────────────────────────",10,False,PURP),"c",60)+
+        para(run("React  •  Node.js  •  Express.js  •  Google Gemini AI  •  Git",12,False,CYAN,True),"c",130)+
+        para(run(""),"c",130)+
         para(run("💬  Savollar uchun tayyorman!",16,True,GREEN),"c",100))
     return s
 
 # ═══════════════════════════════════════════
-# BARCHA SLAYDLAR
-# ═══════════════════════════════════════════
-# Rasmlar:
-# image1 = Home Page
-# image2 = Commits sahifasi
-# image3 = Blok-sxema (axborot oqimi)
-# image4 = Diff Viewer
-# image5 = AI Analiz hisoboti
-# image6 = Dashboard
-
-SLIDES = [
-    # (tur, params)
-    ("title", {}),
-
-    ("section", {"num":"📋","title":"MUNDARIJA",
-     "items":[
-        "1. Kirish — Mavzuning dolzarbligi",
-        "2. I Bob — Versiyalarni boshqarish: nazariy asoslar",
-        "3. II Bob — Arxitektura va dasturiy tizimni loyihalashtirish",
-        "4. III Bob — Amaliy realizatsiya va sinov natijalari",
-        "5. Xulosa, takliflar va kelajak istiqbollari",
-     ]}),
-
-    ("content", {"num":3,"title":"Mavzuning Dolzarbligi",
-     "bullets":[
-        "▸ Zamonaviy dasturiy mahsulotlar o'ta murakkab, ko'p qatlamli arxitekturaga ega",
-        "▸ Jamoaviy ishlashda minglab commit (o'zgarish) kiritiladi — nazorat zarur",
-        "══",
-        "⚠ Asosiy MUAMMO: An'anaviy Diff vositalari FAQAT sintaktik tahlil qiladi",
-        "   • Qizil/yashil qatorlar — nima o'zgarganini KO'RSATADI",
-        "   • Lekin NIMA UCHUN o'zgardi? — hech qachon tushuntirib BERMAYDI",
-        "   • Kiberxavfsizlik xatarlari, mantiqiy muammolar aniqlanmaydi",
-        "══",
-        "✅ Yechim: LLM (Large Language Models) texnologiyasi",
-        "▸ Google Gemini 2.5 Flash — o'zbek tilida semantik tahlil",
-        "▸ React + Node.js + Express.js — zamonaviy SPA veb-platforma",
-        "▸ Natija: Code Review vaqti 40-50% qisqaradi",
-     ]}),
-
-    ("content", {"num":4,"title":"Tadqiqot Maqsadi va Vazifalari",
-     "bullets":[
-        "📌 ASOSIY MAQSAD:",
-        "   Versiyalar orasidagi o'zgarishlarni qatorlar darajasida aniqlash,",
-        "   AI yordamida o'zbek tilida semantik tahlil qiluvchi SPA platforma yaratish",
-        "══",
-        "▸ Git va VCS nazariy asoslarini o'rganish",
-        "▸ jsdiff kutubxonasi va LLM API integratsiyasini tadqiq etish",
-        "▸ 5 oynali mantiqiy-funksional model ishlab chiqish",
-        "▸ Router-Controller andozasida backend arxitekturasi yaratish",
-        "▸ Prompt Engineering — 3 qatlamli model (o'zbek tilida)",
-        "▸ React SPA — sahifalararo ma'lumotlar zanjiri amalga oshirish",
-        "══",
-        "📌 Tadqiqot predmeti: Diff algoritmlari + LLM semantik tahlil metodlari",
-        "📌 Metodlar: OOD, Router-Controller, Prompt Engineering, Git oqimlari",
-     ]}),
-
-    ("section", {"num":"I","title":"BOB: VERSIYALARNI BOSHQARISH TIZIMLARINING NAZARIY ASOSLARI",
-     "items":[
-        "1.1 — VCS tarixi: Lokal, Markazlashtirilgan, Taqsimlangan tizimlar",
-        "1.2 — Diff tahlil metodologiyasi: Mayers, Patience, Histogram algoritmlari",
-        "1.3 — LLM texnologiyalarini dasturiy kod tahliliga integratsiya istiqbollari",
-     ]}),
-
-    ("content", {"num":6,"title":"Versiyalarni Boshqarish Tizimlari (VCS) Tarixiy Tahlili",
-     "bullets":[
-        "▸ LOKAL VCS — fayllar faqat shaxsiy kompyuterda",
-        "   Kamchiligi: jamoaviy ishlash MUMKIN EMAS, server o'chsa tarix yo'qoladi",
-        "══",
-        "▸ MARKAZLASHTIRILGAN (CVCS) — SVN, CVS (bitta server)",
-        "   ⚠ Server o'chsa — butun jamoa ishi to'xtaydi, tarix yo'qoladi",
-        "══",
-        "▸ TAQSIMLANGAN (DVCS) — Git (zamonaviy standart, 2005-hozir)",
-        "   ✅ Har dasturchi to'liq repozitoriyani lokal klonlaydi",
-        "   ✅ Internet shart emas — lokal operatsiyalar sekunddan kam",
-        "   ✅ Snapshot asosida saqlash — tezlik va ishonchlilik kafolati",
-        "   ✅ Branch = 41 baytlik ko'rsatgich — yengil va tezkor tarmoqlanish",
-        "══",
-        "📌 Git — dunyo dasturiy injeneriyasining DE FACTO standarti",
-        "   Code Review jarayoni: Pull Request → jamoa tekshiruvi → merge",
-        "   Muammo: Yirik loyihalarda qo'lda tekshirish inson resursini ko'p oladi",
-     ]}),
-
-    ("content", {"num":7,"title":"Diff Tahlil Algoritmlari — Ilmiy Tahlil",
-     "bullets":[
-        "▸ UNIFIED DIFF FORMATI — xalqaro standart:",
-        "   (+) — qo'shilgan qatorlar  |  (-) — o'chirilgan qatorlar",
-        "   @@ koordinatlar — qaysi satrdan boshlangani aniq ko'rsatiladi",
-        "══",
-        "▸ MAYERS ALGORITMI (Eugene Myers, 1986) — Git standart algoritmi",
-        "   LCS (Longest Common Subsequence) asosida — eng qisqa tahrirlash skripti",
-        "   Kamchiligi: bir xil kalit so'zlar bo'lsa chalg'ituvchi natija",
-        "══",
-        "▸ PATIENCE DIFF — noyob qatorlarga tayanadi",
-        "   Rename, refaktoring operatsiyalarida aniqroq natija",
-        "══",
-        "▸ HISTOGRAM DIFF — chastota asosida optimallashtirish",
-        "   Katta loyihalarda eng yuqori tezlik va aniqlik",
-        "══",
-        "📌 Loyihada: jsdiff kutubxonasi — Mayers algoritmi + JSON parsing",
-        "   Asosiy muammo: Barchasi FAQAT sintaktik — mantiqiy ma'no yo'q!",
-     ]}),
-
-    ("content", {"num":8,"title":"Google Gemini LLM Integratsiyasi — Nima Uchun?",
-     "bullets":[
-        "▸ Transformer arxitekturasi + Self-Attention mexanizmi",
-        "   Kod blokining UMUMIY kontekstini to'liq qamrab oladi",
-        "   An'anaviy linter: faqat qoidalar → LLM: mantiqiy tahlil",
-        "══",
-        "✅ Gemini 2.5 Flash tanlanganligi sabablari:",
-        "══",
-        "📌 1 MILLION TOKEN kontekst oynasi",
-        "   → Butun loyiha diff matni BITTA so'rovda tahlil qilinadi",
-        "   → Fragment-fragment yuborish kerak emas — to'liq va izchil natija",
-        "══",
-        "📌 O'ZBEK TILI semantikasini mukammal tushunadi",
-        "   → Texnik terminologiya + milliy til + professional uslub",
-        "══",
-        "▸ 3 QATLAMLI PROMPT ENGINEERING tuzilmasi:",
-        "   1) System Prompt — mutaxassis roli + o'zbek tili talabi",
-        "   2) Context Injection — diff matni + loyiha meta-ma'lumoti",
-        "   3) Output Format — Markdown: sarlavha + ro'yxat + kod namunalari",
-        "📌 Hallucination kamaytirish: FAQAT berilgan diff asosida fikr yuritish",
-     ]}),
-
-    ("section", {"num":"II","title":"BOB: ARXITEKTURA VA DASTURIY TIZIMNI LOYIHALASHTIRISH",
-     "items":[
-        "2.1 — Funksional talablar, 5 ta asosiy modul va mantiqiy model",
-        "2.2 — Router-Controller andozasida backend arxitekturasi",
-        "2.3 — Frontend-Backend integratsiyasi va axborot oqimlari",
-     ]}),
-
-    ("content", {"num":10,"title":"Tizimning 5 Ta Asosiy Moduli — Mantiqiy Model",
-     "bullets":[
-        "1️⃣  HOME — Kirish moduli",
-        "   GitHub/GitLab URL qabul qilish, Regex validatsiya, yuklanish animatsiyasi",
-        "══",
-        "2️⃣  COMMITS — Repository Explorer",
-        "   Commitlar tarixi, qidiruv (xabar/muallif/ID), 4 ta statistik kartochka",
-        "   Commit tanlash → ma'lumot zanjiri orqali keyingi sahifaga uzatish",
-        "══",
-        "3️⃣  DIFF VIEWER — Kod Vizualizatsiya yadro",
-        "   Yashil (+) = qo'shilgan  |  Qizil (-) = o'chirilgan  |  Chap: fayllar paneli",
-        "══",
-        "4️⃣  AI ANALYSIS — Gemini Semantik Hisoboti",
-        "   O'zbek tilida: sintaktik tahlil + biznes/xavfsizlik mantiqi + Auto-fix",
-        "══",
-        "5️⃣  DASHBOARD — Loyiha Analitikasi",
-        "   Top fayllar grafigi + Dasturchilar reytingi (Leaderboard)",
-        "══",
-        "📌 SPA arxitektura: Brauzer QAYTA YUKLANMAYDI — history.pushState",
-        "   Nofunksional talablar: <200ms API javob, 50+ parallel so'rov, CORS himoya",
-     ]}),
-
-    # image1 = Home Page
-    ("img_right", {"num":11,"title":"Home Page — Tizimning Kirish Moduli","img":"image1.jpg",
-     "bullets":[
-        "▸ GitHub/GitLab URL manzilini qabul qiladi",
-        "══",
-        "▸ Regex validatsiya:",
-        "   URL formati va xavfsizlik tekshiruvi",
-        "══",
-        "▸ Progressiv loading animatsiyasi",
-        "══",
-        "▸ Tayyor ommabop repozitoriyalar ro'yxati",
-        "══",
-        "▸ Dark Mode dizayn",
-        "   Neon effektli zamonaviy interfeys",
-        "══",
-        "▸ Backend bilan asinxron",
-        "   so'rov-javob sikli",
-     ]}),
-
-    # image2 = Commits sahifasi
-    ("img_right", {"num":12,"title":"Commits Sahifasi — Repository Explorer","img":"image2.jpg",
-     "bullets":[
-        "▸ Backend klonlashdan so'ng",
-        "   avtomatik o'tish",
-        "══",
-        "▸ Real vaqt qidiruv:",
-        "   xabar / muallif / commit ID",
-        "══",
-        "▸ 4 ta statistik kartochka:",
-        "   commit soni, qatorlar,",
-        "   mualliflar, o'zgargan fayllar",
-        "══",
-        "▸ Commit tanlash →",
-        "   Diff sahifasiga yo'naltirish",
-        "══",
-        "▸ Sorting va filtering",
-        "   imkoniyatlari",
-     ]}),
-
-    ("content", {"num":13,"title":"Router-Controller Andozasi — Backend Arxitekturasi",
-     "bullets":[
-        "▸ ROUTER QATLAMI (routes/) — faqat endpoint va HTTP metodlar:",
-        "   gitRoutes.js → /api/git/clone, /api/git/commits, /api/git/diff",
-        "   aiRoutes.js  → /api/ai/analyze",
-        "══",
-        "▸ CONTROLLER QATLAMI (controllers/) — biznes mantiq:",
-        "   gitController.js → simple-git: clone, log, diff, parse",
-        "   aiController.js  → Gemini SDK: prompt injection, semantik tahlil",
-        "══",
-        "✅ LOOSE COUPLING — komponentlar mustaqil",
-        "   Gemini o'rniga boshqa LLM = FAQAT 1 fayl o'zgartirish!",
-        "══",
-        "▸ Global Error Handling Middleware:",
-        "   try/catch barcha controllerlarda",
-        "   HTTP 400/404/500 + O'zbek tilida xabar",
-        "══",
-        "📌 Non-blocking I/O: sekundiga 50+ asinxron so'rov parallel qayta ishlash",
-        "   Kesh mexanizmi: klonlangan repolar lokal saqlanadi — tezlik oshadi",
-     ]}),
-
-    # image3 = Blok-sxema
-    ("img_full", {"num":14,"title":"Axborot Oqimlari — Mantiqiy Blok-Sxema","img":"image3.jpg",
-     "caption":[
-        "React Frontend → Axios so'rov → Express Router → Controller → Git/AI yadrolar → JSON Response",
-        "Parallel asinxron qayta ishlash  |  Har qatlam mustaqil  |  SPA: brauzer qayta yuklanmaydi",
-     ]}),
-
-    # image4 = Diff Viewer
-    ("img_right", {"num":15,"title":"Diff Viewer — Kod O'zgarishlarini Vizualizatsiya","img":"image4.jpg",
-     "bullets":[
-        "▸ Commit tanlanganda",
-        "   backend bilan asinxron bog'lanish",
-        "══",
-        "▸ YASHIL satir (+):",
-        "   qo'shilgan kod qatorlari",
-        "══",
-        "▸ QIZIL satir (-):",
-        "   o'chirilgan kod qatorlari",
-        "══",
-        "▸ Chap panel:",
-        "   o'zgargan fayllar ro'yxati",
-        "══",
-        "▸ O'ng panel: diff viewer",
-        "══",
-        "▸ 'AI izohi' tugmasi →",
-        "   Gemini tahlilini boshlash",
-     ]}),
-
-    ("content", {"num":16,"title":"Frontend-Backend Integratsiyasi — RESTful Arxitektura",
-     "bullets":[
-        "▸ RESTful API arxitekturasi — HTTP/JSON protokoli",
-        "   React → Axios asinxron so'rov → Express.js backend → JSON javob",
-        "══",
-        "▸ CORS xavfsizlik sozlamasi:",
-        "   Faqat ruxsat etilgan domenlardan so'rovlarni qabul qilish",
-        "   CSRF hujumlarining oldini olish — birinchi himoya qatlami",
-        "══",
-        "▸ 3 qatlamli axborot oqimi:",
-        "   1) React: so'rov + yuklanish animatsiyasi",
-        "   2) Express: marshrutlash → Controller → Git/AI yadro",
-        "   3) JSON javob → React state → DOM qayta chizish",
-        "══",
-        "▸ Global holat boshqaruvi (State Management):",
-        "   App.jsx markaziy useState — 5 sahifaga prop drilling",
-        "══",
-        "✅ Kesh mexanizmi: klonlangan repolar lokal — qayta so'rovda internet yo'q",
-        "📌 API kalitlar: dotenv — GitHub'ga tasodifan tushib qolmaslik kafolati",
-     ]}),
-
-    ("section", {"num":"III","title":"BOB: AMALIY REALIZATSIYA VA SINOV NATIJALARI",
-     "items":[
-        "3.1 — Node.js/Express.js backend: klonlash va diff tahlil funksionalligi",
-        "3.2 — React SPA frontend: 5 sahifali ma'lumotlar zanjiri",
-        "3.3 — Real repozitoriyalarda sinov va AI semantik hisobotlar tahlili",
-     ]}),
-
-    ("content", {"num":18,"title":"Backend Texnik Stack — Node.js/Express.js",
-     "bullets":[
-        "▸ Node.js — asinxron non-blocking I/O muhiti",
-        "   EventLoop: server yadrosini bloklamasdan parallel so'rovlar qayta ishlash",
-        "══",
-        "▸ Express.js — Router-Controller andoza",
-        "▸ simple-git — Git operatsiyalari: clone, log, diff, pull",
-        "   URL sanitizatsiya → unikal klonlash jildi → diff generatsiya",
-        "▸ jsdiff — Mayers diff algoritmi, structured JSON parsing",
-        "▸ @google/generative-ai — Gemini 2.5 Flash SDK",
-        "▸ dotenv — API kalitlar muhit o'zgaruvchilari (xavfsizlik)",
-        "▸ cors — Cross-Origin xavfsizlik protokoli",
-        "══",
-        "✅ Klonlash optimizatsiyasi:",
-        "   Agar repo lokal mavjud → qayta yuklamasdan pull bilan yangilash",
-        "══",
-        "✅ Xatolik boshqaruvi: try/catch + Global Middleware",
-        "   HTTP 400 (noto'g'ri so'rov) | 404 (topilmadi) | 500 (server xatosi)",
-        "📌 Barcha xatoliklar o'zbek tilida foydalanuvchiga tushunarli xabar",
-     ]}),
-
-    ("content", {"num":19,"title":"Frontend Texnik Stack — React SPA",
-     "bullets":[
-        "▸ React 18 — komponentli SPA arxitektura",
-        "   Virtual DOM: FAQAT o'zgargan komponent qayta chiziladi — tezlik",
-        "══",
-        "▸ useState + useEffect — holat boshqaruvi",
-        "   App.jsx markaziy xotira → 5 sahifaga prop drilling",
-        "   history.pushState — URL yo'llari dinamik yangilanadi",
-        "══",
-        "▸ Axios — HTTP interceptors, asinxron so'rovlar",
-        "   Global baseURL + so'rov/javob interceptorlari",
-        "   Double-submit xatolarining oldini olish (loading state)",
-        "══",
-        "▸ ReactMarkdown — AI hisobotini render qilish",
-        "   Markdown → chiroyli formatlangan professional tahlil",
-        "══",
-        "▸ CSS Dark Mode — Neon effektlar, progress animatsiyalari",
-        "══",
-        "📌 Virtual Scrolling: 10000+ qatorli diff-ni brauzer muzlatmasdan ko'rsatish",
-        "📌 Exponential Backoff Retry: API nosozligida avtomatik qayta urinish",
-     ]}),
-
-    # image5 = AI Analiz
-    ("img_right", {"num":20,"title":"AI Semantik Hisobot — Google Gemini Natijasi","img":"image5.jpg",
-     "bullets":[
-        "▸ O'zbek tilida",
-        "   professional tahlil",
-        "══",
-        "▸ Sintaktik o'zgarishlar:",
-        "   nima o'zgargan",
-        "══",
-        "▸ Biznes/Xavfsizlik:",
-        "   nima uchun o'zgargan",
-        "══",
-        "▸ Auto-fix tavsiyalar:",
-        "   tayyor kod namunalari",
-        "══",
-        "▸ Markdown formatida",
-        "   render qilinadi",
-        "══",
-        "▸ Hallucination kamaytirish:",
-        "   faqat diff asosida",
-     ]}),
-
-    # image6 = Dashboard
-    ("img_right", {"num":21,"title":"Dashboard — Loyiha Analitikasi va Monitoring","img":"image6.jpg",
-     "bullets":[
-        "▸ Umumiy statistika:",
-        "   commitlar, qatorlar,",
-        "   mualliflar soni",
-        "══",
-        "▸ Top fayllar grafigi:",
-        "   progress-bar animatsiya",
-        "   (binafsha-yashil ranglar)",
-        "══",
-        "▸ Dasturchilar reytingi:",
-        "   Leaderboard — eng faol",
-        "   jamoa a'zolari",
-        "══",
-        "▸ Real vaqtda hisoblash",
-        "══",
-        "▸ Loyiha audit uchun",
-        "   monitoring vositasi",
-     ]}),
-
-    ("content", {"num":22,"title":"Sinov Natijalari — Real Repozitoriyalarda",
-     "bullets":[
-        "▸ Real GitHub repozitoriyalari ustida sinov: JavaScript ekotizimi, murakkab loyihalar",
-        "══",
-        "✅ Barcha 5 modul muvaffaqiyatli ishladi",
-        "✅ AI o'zbek tilida professional semantik hisobot berdi",
-        "✅ Kiberxavfsizlik kamchiliklari avtomatik aniqlandi",
-        "✅ Auto-fix: tayyor optimallashtirilgan kod namunalari generatsiya qilindi",
-        "══",
-        "📌 ASOSIY O'LCHOVLI NATIJALAR:",
-        "══",
-        "   Code Review vaqti 40-50% qisqardi",
-        "   Mantiqiy xatolarni aniqlash aniqligi sezilarli oshdi",
-        "   AI hallucination kamaytirish samarali ishladi",
-        "   Dashboard: commitlar, qatorlar, mualliflar statistikasi real vaqtda",
-        "══",
-        "📌 Nofunksional talablar bajarildi:",
-        "   Ishlash tezligi: oddiy API so'rovlar < 200ms",
-        "   Ishonchlilik: Global Error Handling + Retry mexanizmi",
-        "   Xavfsizlik: Regex validatsiya + CORS + dotenv API kalit himoyasi",
-     ]}),
-
-    ("content", {"num":23,"title":"Ilmiy Yangilik va Amaliy Ahamiyat",
-     "bullets":[
-        "▸ ILMIY YANGILIK:",
-        "   Kod o'zgarishlarini LLM yordamida o'ZBEK TILIDA semantik tahlil qilishning",
-        "   integratsiyalashgan mantiqiy-arxitekturaviy modeli birinchi marta ishlab chiqildi",
-        "══",
-        "▸ AMALIY AHAMIYAT:",
-        "   ✅ IT kompaniyalar uchun Code Review avtomatizatsiyasi",
-        "   ✅ Loyiha audit va monitoring tizimi — real vaqt",
-        "   ✅ Jamoa faolligini kuzatish (Dashboard + Leaderboard)",
-        "   ✅ Dasturiy xavfsizlikni ta'minlash vositasi",
-        "══",
-        "▸ KELAJAKDAGI CHEKLOVLAR:",
-        "   Tashqi bulutli API — ma'lumotlar xavfsizligi masalasi",
-        "   Lokal LLM modeli zarur (Llama-3, CodeLlama, DeepSeek-Coder)",
-        "══",
-        "📌 IQTISODIY AHAMIYAT:",
-        "   Adapter Pattern orqali tashqi + lokal LLM ga moslashtirilgan",
-        "   Korporativ NDAs va GDPR talablariga javob bera oladi",
-     ]}),
-
-    ("content", {"num":24,"title":"Xulosa",
-     "bullets":[
-        "1️⃣  An'anaviy diff vositalari faqat sintaktik darajada qoladi",
-        "    Semantik tahlil uchun AI integratsiya ZARUR ekanligi isbotlandi",
-        "══",
-        "2️⃣  Router-Controller + React SPA arxitekturasi",
-        "    Barqarorlik, tezkorlik va modullilikni ta'minladi",
-        "══",
-        "3️⃣  Gemini 2.5 Flash: o'zbek tilida professional semantik hisobot",
-        "    3 qatlamli Prompt Engineering tuzilmasi muvaffaqiyatli ishladi",
-        "══",
-        "4️⃣  Real sinov natijalari:",
-        "    Code Review vaqti 40-50% qisqardi",
-        "    Kiberxavfsizlik muammolari avtomatik aniqlanadi",
-        "══",
-        "📌 Ishlab chiqilgan SPA veb-platforma IT kompaniyalar uchun",
-        "   tayyor amaliy dasturiy mahsulot sifatida foydalanishga tayyor!",
-     ]}),
-
-    ("content", {"num":25,"title":"Takliflar va Kelajak Istiqbollari",
-     "bullets":[
-        "🔷 CI/CD Integratsiya — GitHub Actions/GitLab CI plagin",
-        "   Har commitda avtomatik AI tahlil → dasturchi ogohlantirish oladi",
-        "══",
-        "🔷 Lokal LLM modeli — Llama-3, CodeLlama, DeepSeek-Coder",
-        "   Ma'lumotlar maxfiyligi — GDPR muvofiqlik, korporativ tarmoq",
-        "══",
-        "🔷 Shaxsiylashtirilgan Prompt Sozlash Paneli",
-        "   Kompaniya ichki standartlariga moslashtirilgan tahlil",
-        "══",
-        "🔷 Interaktiv Vizualizatsiya",
-        "   Fayllararo bog'liqlik grafigi, arxitektura diagrammasi",
-        "══",
-        "🔷 Ko'p tillik qo'llab-quvvatlash",
-        "   Rus, ingliz, qozoq tillarida semantik hisobotlar",
-        "══",
-        "🔷 Korporativ Dashboard — Jamoa samaradorligi monitoring tizimi",
-        "   SonarQube + LLM kombinatsiyasi — to'liq kod sifat portali",
-     ]}),
-
-    ("final", {}),
-]
-
-# ═══════════════════════════════════════════
-# PPTX YARATISH
+# PPTX GENERATSIYA
 # ═══════════════════════════════════════════
 
 def generate():
     out = Path("pptx_build")
     shutil.rmtree(out, ignore_errors=True)
 
-    d = {
-        "ppt/slides": out/"ppt"/"slides",
-        "ppt/slides/_rels": out/"ppt"/"slides"/"_rels",
-        "ppt/media": out/"ppt"/"media",
-        "_rels": out/"_rels",
-        "ppt/_rels": out/"ppt"/"_rels",
-        "ppt/slideLayouts": out/"ppt"/"slideLayouts",
-        "ppt/slideLayouts/_rels": out/"ppt"/"slideLayouts"/"_rels",
-        "ppt/slideMasters": out/"ppt"/"slideMasters",
-        "ppt/slideMasters/_rels": out/"ppt"/"slideMasters"/"_rels",
-        "docProps": out/"docProps",
-    }
-    for k,v in d.items():
-        v.mkdir(parents=True, exist_ok=True)
+    dirs = [
+        out/"ppt"/"slides", out/"ppt"/"slides"/"_rels",
+        out/"ppt"/"media", out/"_rels", out/"ppt"/"_rels",
+        out/"ppt"/"slideLayouts", out/"ppt"/"slideLayouts"/"_rels",
+        out/"ppt"/"slideMasters", out/"ppt"/"slideMasters"/"_rels",
+        out/"docProps",
+    ]
+    for d in dirs:
+        d.mkdir(parents=True, exist_ok=True)
 
-    # Rasmlarni ko'chirish
-    img_map = {}
-    img_files = ["image1.jpg","image2.jpg","image3.jpg","image4.jpg","image5.jpg","image6.jpg"]
-    for i, fname in enumerate(img_files):
+    # Rasmlar
+    img_files = {
+        "image1.jpg": "rId6",   # Home Page
+        "image2.jpg": "rId7",   # Commits
+        "image3.jpg": "rId8",   # Blok-sxema
+        "image4.jpg": "rId9",   # Diff Viewer
+        "image5.jpg": "rId10",  # AI Analiz
+        "image6.jpg": "rId11",  # Dashboard
+    }
+    for fname, rId in img_files.items():
         src = Path("images") / fname
         if src.exists():
             shutil.copy(src, out/"ppt"/"media"/fname)
-            img_map[fname] = f"rId{i+6}"
 
-    # Slayd shapes generatsiya
-    slide_shapes = []
-    for sd in SLIDES:
-        stype = sd[0]
-        p = sd[1]
-        if stype == "title":
-            shapes = title_slide()
-        elif stype == "section":
-            shapes = section_slide(p["num"], p["title"], p["items"])
-        elif stype == "content":
-            shapes = content_slide(p["title"], p["bullets"], p["num"])
-        elif stype == "img_right":
-            rId = img_map.get(p["img"])
-            if rId:
-                shapes = img_right_slide(p["title"], rId, p["bullets"], p["num"])
-            else:
-                shapes = content_slide(p["title"], p["bullets"], p["num"])
-        elif stype == "img_full":
-            rId = img_map.get(p["img"])
-            if rId:
-                shapes = img_full_slide(p["title"], rId, p["caption"], p["num"])
-            else:
-                shapes = content_slide(p["title"], p["caption"], p["num"])
-        elif stype == "final":
-            shapes = final_slide()
-        else:
-            shapes = ""
-        slide_shapes.append((stype, shapes, p))
+    # Slaydlar
+    slides_data = [
+        (s1_muqova(),  {}),
+        (s2_reja(),    {}),
+        (s3_kirish(),  {}),
+        (s4_1_1(),     {}),
+        (s5_1_2(),     {}),
+        (s6_1_3(),     {}),
+        (s7_2_1(img_files["image1.jpg"]),        {"img":"image1.jpg","rId":"rId6"}),
+        (s8_commits(img_files["image2.jpg"]),     {"img":"image2.jpg","rId":"rId7"}),
+        (s9_2_2_bloksxema(img_files["image3.jpg"]),{"img":"image3.jpg","rId":"rId8"}),
+        (s10_diff(img_files["image4.jpg"]),        {"img":"image4.jpg","rId":"rId9"}),
+        (s11_backend(),{}),
+        (s12_ai(img_files["image5.jpg"]),          {"img":"image5.jpg","rId":"rId10"}),
+        (s13_dashboard(img_files["image6.jpg"]),   {"img":"image6.jpg","rId":"rId11"}),
+        (s14_xulosa(), {}),
+        (s15_rahmat(), {}),
+    ]
 
-    n = len(SLIDES)
+    n = len(slides_data)
 
-    # Slayd XML fayllar
-    for i, (stype, shapes, p) in enumerate(slide_shapes):
+    for i, (shapes, meta) in enumerate(slides_data):
         with open(out/"ppt"/"slides"/f"slide{i+1}.xml","w",encoding="utf-8") as f:
             f.write(sxml(shapes))
 
-    # Slayd rels
-    for i, (stype, shapes, p) in enumerate(slide_shapes):
         rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n'
         rels += '  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>\n'
-        img_key = p.get("img") if isinstance(p, dict) else None
-        if img_key and img_key in img_map:
-            rId = img_map[img_key]
-            rels += f'  <Relationship Id="{rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/{img_key}"/>\n'
+        if "img" in meta:
+            rels += f'  <Relationship Id="{meta["rId"]}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/{meta["img"]}"/>\n'
         rels += "</Relationships>"
-        with open(out/"ppt"/"slides"/"_rels"/f"slide{i+1}.xml.rels","w",encoding="utf-8") as f:
+        with open(out/"ppt"/"slides"/"_rels"/f"slide{i+1}.xml.rels","w") as f:
             f.write(rels)
 
     # slideLayout
-    layout = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    with open(out/"ppt"/"slideLayouts"/"slideLayout1.xml","w") as f:
+        f.write('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sldLayout xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
              xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
              xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
              type="blank" preserve="1">
-  <p:cSld><p:spTree>
-    <p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
-    <p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/>
-    <a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>
-  </p:spTree></p:cSld><p:clrMapOvr><a:masterClr/></p:clrMapOvr></p:sldLayout>'''
-    with open(out/"ppt"/"slideLayouts"/"slideLayout1.xml","w") as f: f.write(layout)
-    lr = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:cSld><p:spTree>
+<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
+<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/>
+<a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>
+</p:spTree></p:cSld><p:clrMapOvr><a:masterClr/></p:clrMapOvr></p:sldLayout>''')
+    with open(out/"ppt"/"slideLayouts"/"_rels"/"slideLayout1.xml.rels","w") as f:
+        f.write('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/>
-</Relationships>'''
-    with open(out/"ppt"/"slideLayouts"/"_rels"/"slideLayout1.xml.rels","w") as f: f.write(lr)
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/>
+</Relationships>''')
 
     # slideMaster
-    master = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    with open(out/"ppt"/"slideMasters"/"slideMaster1.xml","w") as f:
+        f.write('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
              xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
              xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <p:cSld><p:spTree>
-    <p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
-    <p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/>
-    <a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>
-  </p:spTree></p:cSld>
-  <p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2"
-            accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6"
-            hlink="hlink" folHlink="folHlink"/>
-  <p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst>
-  <p:txStyles>
-    <p:titleStyle><a:lstStyle/></p:titleStyle>
-    <p:bodyStyle><a:lstStyle/></p:bodyStyle>
-    <p:otherStyle><a:lstStyle/></p:otherStyle>
-  </p:txStyles></p:sldMaster>'''
-    with open(out/"ppt"/"slideMasters"/"slideMaster1.xml","w") as f: f.write(master)
-    mr = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:cSld><p:spTree>
+<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
+<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/>
+<a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>
+</p:spTree></p:cSld>
+<p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2"
+          accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6"
+          hlink="hlink" folHlink="folHlink"/>
+<p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst>
+<p:txStyles>
+<p:titleStyle><a:lstStyle/></p:titleStyle>
+<p:bodyStyle><a:lstStyle/></p:bodyStyle>
+<p:otherStyle><a:lstStyle/></p:otherStyle>
+</p:txStyles></p:sldMaster>''')
+    with open(out/"ppt"/"slideMasters"/"_rels"/"slideMaster1.xml.rels","w") as f:
+        f.write('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>
-</Relationships>'''
-    with open(out/"ppt"/"slideMasters"/"_rels"/"slideMaster1.xml.rels","w") as f: f.write(mr)
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>
+</Relationships>''')
 
     # presentation.xml
-    sids = "\n".join(f'    <p:sldId id="{256+i}" r:id="rId{i}"/>' for i in range(1,n+1))
-    prs = f'''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    sids = "\n".join(f'<p:sldId id="{256+i}" r:id="rId{i}"/>' for i in range(1,n+1))
+    with open(out/"ppt"/"presentation.xml","w") as f:
+        f.write(f'''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
                 xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
                 xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" saveSubsetFonts="1">
-  <p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId{n+1}"/></p:sldMasterIdLst>
-  <p:sldIdLst>\n{sids}\n  </p:sldIdLst>
-  <p:sldSz cx="12192000" cy="6858000" type="screen4x3"/>
-  <p:notesSz cx="6858000" cy="9144000"/></p:presentation>'''
-    with open(out/"ppt"/"presentation.xml","w") as f: f.write(prs)
+<p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId{n+1}"/></p:sldMasterIdLst>
+<p:sldIdLst>{sids}</p:sldIdLst>
+<p:sldSz cx="12192000" cy="6858000" type="screen4x3"/>
+<p:notesSz cx="6858000" cy="9144000"/></p:presentation>''')
 
     pr2 = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n'
     for i in range(1,n+1):
-        pr2 += f'  <Relationship Id="rId{i}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide{i}.xml"/>\n'
-    pr2 += f'  <Relationship Id="rId{n+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>\n'
-    pr2 += "</Relationships>"
-    with open(out/"ppt"/"_rels"/"presentation.xml.rels","w") as f: f.write(pr2)
+        pr2 += f'<Relationship Id="rId{i}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide{i}.xml"/>\n'
+    pr2 += f'<Relationship Id="rId{n+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>\n</Relationships>'
+    with open(out/"ppt"/"_rels"/"presentation.xml.rels","w") as f:
+        f.write(pr2)
 
-    # _rels/.rels
-    rr = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    with open(out/"_rels"/".rels","w") as f:
+        f.write('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
-  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
-</Relationships>'''
-    with open(out/"_rels"/".rels","w") as f: f.write(rr)
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
+</Relationships>''')
 
-    # docProps/core.xml
     with open(out/"docProps"/"core.xml","w") as f:
         f.write('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
                    xmlns:dc="http://purl.org/dc/elements/1.1/">
-  <dc:title>Dasturiy versiyalar tahlil tizimi - Diplom Himoya</dc:title>
-  <dc:creator>Amonov Sohibjon</dc:creator>
+<dc:title>Dasturiy versiyalar tahlil tizimi</dc:title>
+<dc:creator>Amonov Sohibjon</dc:creator>
 </cp:coreProperties>''')
 
-    # [Content_Types].xml
     ct = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Default Extension="jpg" ContentType="image/jpeg"/>
-  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
-  <Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>
-  <Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Default Extension="jpg" ContentType="image/jpeg"/>
+<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+<Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>
+<Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>
 '''
     for i in range(1,n+1):
-        ct += f'  <Override PartName="/ppt/slides/slide{i}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>\n'
-    ct += '  <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>\n</Types>'
-    with open(out/"[Content_Types].xml","w") as f: f.write(ct)
+        ct += f'<Override PartName="/ppt/slides/slide{i}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>\n'
+    ct += '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>\n</Types>'
+    with open(out/"[Content_Types].xml","w") as f:
+        f.write(ct)
 
-    # ZIP
     outfile = "Amonov_Diplom_Prezentatsiya.pptx"
     with zipfile.ZipFile(outfile,"w",zipfile.ZIP_DEFLATED) as zf:
         for fp in out.rglob("*"):
@@ -857,10 +864,9 @@ def generate():
                 zf.write(fp, str(fp.relative_to(out)))
     shutil.rmtree(out)
     sz = os.path.getsize(outfile)
-    print(f"TAYYOR: {outfile}")
-    print(f"Hajm: {sz/1024:.1f} KB")
-    print(f"Slaydlar: {n} ta")
-    print(f"Rasmlar: {len(img_map)} ta")
+    print(f"✅ TAYYOR: {outfile}")
+    print(f"📊 Hajm: {sz/1024:.1f} KB")
+    print(f"📑 Slaydlar: {n} ta")
 
 if __name__ == "__main__":
     generate()
